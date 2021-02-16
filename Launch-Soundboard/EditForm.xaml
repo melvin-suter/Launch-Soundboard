@@ -175,18 +175,25 @@
         </Grid.RowDefinitions>
 
         <TextBlock Text="Sound" Grid.Row="0"/>
-        <ComboBox Grid.Row="0" Grid.Column="1" x:Name="soundBox"/>
+        <Grid Grid.Column="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <TextBox IsReadOnly="True" x:Name="soundBox" Background="#444"/>
+            <Button Content="..." Grid.Column="1" Click="selectFile"/>
+        </Grid>
 
         <TextBlock Text="Volume" Grid.Row="1"/>
         <TextBox Grid.Row="1" Grid.Column="1" x:Name="volumeBox" Text="1" InputScope="Number"/>
 
         <TextBlock Text="Color" Grid.Row="2"/>
-        <ComboBox Grid.Row="2" Grid.Column="1" x:Name="colorBox" >
-            <ComboBox.Items>
-                <ComboBoxItem Content="Red"/>
-                <ComboBoxItem Content="Green"/>
-            </ComboBox.Items>
-        </ComboBox>
+        <ComboBox Grid.Row="2" Grid.Column="1" x:Name="colorBox" />
+
+        
+        <Button Content="Delete" Click="DeleteClick" Grid.Row="4"/>
+
 
         <StackPanel Grid.Row="4" Orientation="Horizontal" Grid.ColumnSpan="2" HorizontalAlignment="Right">
             <Button Content="Save" Click="SaveClick"/>

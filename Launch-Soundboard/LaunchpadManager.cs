@@ -12,19 +12,20 @@ namespace Launch_Soundboard
 {
     public enum LaunchpadButtonColor
     {
-        LightGreen,
-        Lila,
-        Pink,
-        Red,
-        DarkBlue,
         LightBlue,
+        DarkBlue,
         Purple,
+        LightGreen,
         Green,
         Oliv,
         Yellow,
         Orange,
+        Red,
+        Lila,
+        Pink,        
         White,
-        Gray
+        Gray,
+        Off
     }
 
     public class LaunchpadManager
@@ -35,6 +36,7 @@ namespace Launch_Soundboard
         public event BarEventHandler buttonPressed_BarRight;
         public event BarEventHandler buttonPressed_BarTop;
 
+
         OutputDevice outDev;
         InputDevice inDev;
         List<int> pressedButtons = new List<int>();
@@ -42,10 +44,14 @@ namespace Launch_Soundboard
 
         public LaunchpadManager()
         {
-            // Ready devices
-            outDev = OutputDevice.GetByName("MIDIOUT2 (LPMiniMK3 MIDI)");
-            inDev = InputDevice.GetByName("MIDIIN2 (LPMiniMK3 MIDI)");
-            
+
+            // Get Device
+            SelectDevices wnd = new SelectDevices();
+            wnd.ShowDialog();
+
+            outDev = OutputDevice.GetByName(Config.config.outputDevice);
+            inDev = InputDevice.GetByName(Config.config.inputDevice);
+
             // Setup Event Handler
             buttonPressed_Grid = new GridEventHandler((a, b) => { });
             buttonPressed_BarRight = new BarEventHandler((a, b) => { });
@@ -57,7 +63,7 @@ namespace Launch_Soundboard
                 var midiDevice = (MidiDevice)a;
 
                 // is on sidebar
-                if(e.Event.EventType == MidiEventType.ControlChange)
+                if (e.Event.EventType == MidiEventType.ControlChange)
                 {
                     var midiEvent = (ControlChangeEvent)e.Event;
 
@@ -68,7 +74,7 @@ namespace Launch_Soundboard
                         int col = midiEvent.ControlNumber - ((midiEvent.ControlNumber / 10) * 10);
 
                         // Right
-                        if(col == 9)
+                        if (col == 9)
                         {
                             buttonPressed_BarRight.Invoke(new object(), new BarEventArgs(row));
                         }
@@ -84,7 +90,7 @@ namespace Launch_Soundboard
                     }
 
                     // Button Up
-                    if(midiEvent.ControlValue == 0)
+                    if (midiEvent.ControlValue == 0)
                     {
                         // Add to the currently pressed buttons
                         pressedButtons.Remove(midiEvent.ControlNumber);
@@ -107,7 +113,7 @@ namespace Launch_Soundboard
                         int col = midiEvent.NoteNumber - ((midiEvent.NoteNumber / 10) * 10);
 
                         // Raid Grid Event
-                        buttonPressed_Grid.Invoke(new object(), new GridEventArgs(row,col));
+                        buttonPressed_Grid.Invoke(new object(), new GridEventArgs(row, col));
                     }
 
                     // Button Up
@@ -320,8 +326,40 @@ namespace Launch_Soundboard
                     return System.Windows.Media.Color.FromRgb(100, 100, 100);
                     break;
 
+
                 default:
-                    return System.Windows.Media.Color.FromRgb(34, 34, 34);
+                    return System.Windows.Media.Color.FromRgb(51, 51, 51);
+                    break;
+            }
+        }
+
+
+        public System.Windows.Media.Color enum2foreground(LaunchpadButtonColor color)
+        {
+            switch (color)
+            {
+                case LaunchpadButtonColor.Red:
+                case LaunchpadButtonColor.Orange:
+                case LaunchpadButtonColor.Pink:
+                case LaunchpadButtonColor.Lila:
+                case LaunchpadButtonColor.DarkBlue:
+                case LaunchpadButtonColor.Purple:
+                case LaunchpadButtonColor.Oliv:
+                case LaunchpadButtonColor.Gray:
+                    return System.Windows.Media.Colors.White;
+                    break;
+
+                case LaunchpadButtonColor.Yellow:
+                case LaunchpadButtonColor.White:
+                case LaunchpadButtonColor.LightBlue:
+                case LaunchpadButtonColor.LightGreen:
+                case LaunchpadButtonColor.Green:
+                    return System.Windows.Media.Colors.Black;
+                    break;
+
+
+                default:
+                    return System.Windows.Media.Color.FromRgb(51, 51, 51);
                     break;
             }
         }

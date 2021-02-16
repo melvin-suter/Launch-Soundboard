@@ -26,6 +26,7 @@ namespace Launch_Soundboard
         Button[,] launchpadButtonDefinitions = new Button[9, 9];
         public static bool editMode = false;
         LaunchpadManager lpMngr;
+        int currentSet = 0;
 
         public MainWindow()
         {
@@ -64,23 +65,12 @@ namespace Launch_Soundboard
 
 
             // Edit Button
-            editButton.Click += (a, b) =>
-            {
-                editMode = !editMode;
+            editButton.Click += toggleEditMode;
+            saveButton.Click += toggleEditMode;
 
-                if (editMode)
-                {
-                    editButton.Visibility = Visibility.Collapsed;
-                    saveButton.Visibility = Visibility.Visible;
-                    cancelButton.Visibility = Visibility.Visible;
-                }
-                else
-                {
-                    editButton.Visibility = Visibility.Visible;
-                    saveButton.Visibility = Visibility.Collapsed;
-                    cancelButton.Visibility = Visibility.Collapsed;
-                }
-            };
+            // Load Config
+            Config.load();
+            this.Closing += (a, b) => Config.save(); // Save on exit
 
             // Setup Launchpad
             lpMngr = new LaunchpadManager();
@@ -88,7 +78,30 @@ namespace Launch_Soundboard
             // Setup Start/Stop Button
             setColor_BarRight(8, LaunchpadButtonColor.Red);
 
+            // Setup Load Grid
+            loadSoundSet();
 
+            // Setup Launchpad Events
+            lpMngr.buttonPressed_BarRight += (a, e) =>
+            {
+                if (e.nr < 8)
+                {
+                    currentSet = e.nr - 1;
+                    Dispatcher.Invoke(() =>
+                    {
+                        loadSoundSet();
+                    });
+                }
+                else
+                {
+                    SoundManager.stopAll();
+                }
+            };
+            lpMngr.buttonPressed_Grid += (a, e) => GridButtonClick(e.col - 1, e.row - 1);
+
+            // Setup Sound Manager Events
+            SoundManager.playingSound += (a, b) => Dispatcher.Invoke(() => setColor_BarRight(8, LaunchpadButtonColor.Green));
+            SoundManager.stoppedSound += (a, b) => Dispatcher.Invoke(() => setColor_BarRight(8, LaunchpadButtonColor.Red));
 
             /*
             //COLOR EXAMPLE 
@@ -116,25 +129,81 @@ namespace Launch_Soundboard
             setColor_BarRight(4, LaunchpadButtonColor.Gray);
             setColor_BarRight(5, LaunchpadButtonColor.Red);
             */
-
-
         }
 
         /************************
          *        Events
          ************************/
 
-        public void LaunchGridButton_OnClick(object sender, EventArgs args)
+        public void toggleEditMode(object sender, EventArgs args)
         {
+            editMode = !editMode;
+
             if (editMode)
             {
-                EditForm editWnd = new EditForm();
-                editWnd.ShowDialog();
+                editButton.Visibility = Visibility.Collapsed;
+                saveButton.Visibility = Visibility.Visible;
             }
             else
             {
-
+                editButton.Visibility = Visibility.Visible;
+                saveButton.Visibility = Visibility.Collapsed;
+                Config.save();
             }
+        }
+
+        public void LaunchGridButton_OnClick(object sender, EventArgs args)
+        {
+            Button btn = (Button)sender;
+            int col = Grid.GetColumn((UIElement)btn);
+            int row = Grid.GetRow((UIElement)btn) - 1;
+
+            if (col < 8)
+            {
+                if (editMode)
+                {
+                    EditForm editWnd = new EditForm();
+                    editWnd.color = Config.config.sets[currentSet].buttons[col, row].color.ToString();
+                    editWnd.volume = Config.config.sets[currentSet].buttons[col, row].volume.ToString();
+                    editWnd.sound = Config.config.sets[currentSet].buttons[col, row].sound;
+                    editWnd.ShowDialog();
+
+                    if (editWnd.result == true)
+                    {
+
+                        Config.config.sets[currentSet].buttons[col, row].color = (LaunchpadButtonColor)Enum.Parse(typeof(LaunchpadButtonColor), editWnd.color, true);
+                        Config.config.sets[currentSet].buttons[col, row].sound = editWnd.sound;
+                        Config.config.sets[currentSet].buttons[col, row].volume = Convert.ToDouble(editWnd.volume);
+                        loadSoundSet();
+                    }
+                }
+                else
+                {
+                    GridButtonClick(col, row);
+                }
+            }
+            else
+            {
+                if (row < 7)
+                {
+                    currentSet = row ;
+                    Dispatcher.Invoke(() =>
+                    {
+                        loadSoundSet();
+                    });
+                }
+                else
+                {
+                    SoundManager.stopAll();
+                }
+            }
+        }
+
+        public void GridButtonClick(int col, int row)
+        {
+            SoundButton btn = Config.config.sets[currentSet].buttons[col, row];
+            SoundManager.playSong(btn.sound, (float)btn.volume);
+
         }
 
 
@@ -143,9 +212,32 @@ namespace Launch_Soundboard
          * Public Update Buttons
          ************************/
 
+        public void loadSoundSet()
+        {
+            for (int row = 1; row <= 8; row++)
+            {
+                for (int col = 1; col <= 8; col++)
+                {
+                    SoundButton btn = Config.config.sets[currentSet].buttons[col - 1, row - 1];
+                    setText(row, col, System.IO.Path.GetFileNameWithoutExtension(btn.sound), lpMngr.enum2foreground(btn.color));
+                    setColor(row, col, btn.color);
+                }
+
+                if (row < 8)
+                    setColor_BarRight(row, row - 1 == currentSet ? LaunchpadButtonColor.Green : LaunchpadButtonColor.Gray);
+            }
+
+        }
+
         public void LaunchGridButton_Press(int row, int col)
         {
             ((Button)launchpadButtonDefinitions[col, row]).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        }
+
+        public void setText(int row, int col, string text, Color color)
+        {
+            ((Button)launchpadButtonDefinitions[col - 1, row - 1]).Content = text;
+            ((Button)launchpadButtonDefinitions[col - 1, row - 1]).Foreground = new SolidColorBrush(color);
         }
 
         public void setColor(int row, int col, LaunchpadButtonColor color)

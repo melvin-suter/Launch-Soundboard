@@ -62,15 +62,7 @@
         </Grid.RowDefinitions>
 
         <!-- Editing Buttons -->
-        <Grid Grid.Row="0" Grid.Column="8">
-            <Grid.RowDefinitions>
-                <RowDefinition/>
-                <RowDefinition/>
-            </Grid.RowDefinitions>
-            <Button Content="Edit" Grid.RowSpan="2" x:Name="editButton"/>
-
-            <Button Content="Save" x:Name="saveButton" Grid.Row="0" Visibility="Collapsed"/>
-            <Button Content="Cancel" x:Name="cancelButton"  Grid.Row="1" Visibility="Collapsed"/>
-        </Grid>
+        <Button Grid.Row="0" Grid.Column="8" Content="Edit" x:Name="editButton"/>
+        <Button Grid.Row="0" Grid.Column="8" Content="Close" x:Name="saveButton" Visibility="Collapsed"/>
     </Grid>
 </Window>
